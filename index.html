@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FMI OFF VN BY VICIOUS</title>
+    <style>
+        :root { --border-color: #d1d5db; --header-bg: #1e293b; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 20px; background: #f3f4f6; }
+        .container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: var(--header-bg); margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
+        .toolbar { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; flex-wrap: wrap; }
+        .search-box { padding: 8px; border: 2px solid var(--border-color); border-radius: 5px; flex-grow: 1; min-width: 200px; }
+        button { padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; }
+        .btn-add { background: #10b981; }
+        .btn-save { background: #3b82f6; }
+        .btn-export { background: #6366f1; }
+        
+        .table-wrapper { width: 100%; border: 1px solid var(--border-color); border-radius: 8px; background: white; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        thead th { position: sticky; top: 0; z-index: 10; background: var(--header-bg); color: white; padding: 12px; border: 1px solid #475569; font-size: 13px; }
+        td { padding: 8px; border: 1px solid var(--border-color); outline: none; font-size: 12px; vertical-align: middle; position: relative; }
+        
+        td:nth-child(1) { background-color: #f8fafc; text-align: center; font-weight: bold; } 
+        td:nth-child(5) { background-color: #fffbeb; font-family: 'Courier New', monospace; font-weight: bold; } 
+
+        .select-custom { width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; }
+
+        .content-cell {
+            max-width: 300px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: block;
+            cursor: pointer;
+        }
+
+        td:nth-child(10):focus-within .content-cell {
+            white-space: normal;
+            max-width: 500px;
+            max-height: 500px;
+            overflow-y: auto;
+            background: #fff;
+            padding: 10px;
+            border: 1px solid #3b82f6;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            position: absolute;
+            top: 0; left: 0; z-index: 100;
+        }
+
+        /* Màn hình khóa */
+        #lock-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #1e293b;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            text-align: center;
+            width: 300px;
+        }
+        .login-box h3 { margin-bottom: 20px; color: #1e293b; }
+        .login-box input {
+            padding: 12px;
+            width: 100%;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+        }
+        .btn-login {
+            background: #3b82f6;
+            padding: 12px;
+            width: 100%;
+            font-size: 16px;
+        }
+        .btn-login:hover { background: #2563eb; }
+
+        .btn-del { background: #ef4444; padding: 4px 8px; font-size: 11px; }
+        #msg { margin-left: auto; color: #059669; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<!-- Màn hình đăng nhập -->
+<div id="lock-screen">
+    <div class="login-box">
+        <h3>🔒 HỆ THỐNG QUẢN LÝ</h3>
+        <input type="text" id="adminUser" placeholder="Tên đăng nhập">
+        <input type="password" id="adminPass" placeholder="Mật khẩu">
+        <button class="btn-login" onclick="checkLogin()">Đăng Nhập</button>
+        <p id="err-msg" style="color: red; font-size: 13px; margin-top: 15px; font-weight: bold;"></p>
+    </div>
+</div>
+
+<div class="container">
+    <h2><b>FMI OFF VN BY VICIOUS</b></h2>
+    <div class="toolbar">
+        <input type="text" id="searchInput" class="search-box" placeholder="Tìm nhanh..." onkeyup="searchTable()">
+        <button class="btn-add" onclick="addNewRow()">+ Thêm Dòng</button>
+        <button class="btn-export" onclick="exportToText()">📋 Copy Data</button>
+        <button class="btn-save" onclick="saveData()">💾 Lưu Dữ Liệu</button>
+        <span id="msg"></span>
+    </div>
+    <div class="table-wrapper">
+        <table id="deviceTable">
+            <thead>
+                <tr>
+                    <th style="width: 40px;">TT</th>
+                    <th style="width: 80px;">Status</th>
+                    <th style="width: 120px;">Soldby</th>
+                    <th style="width: 70px;">INFO</th>
+                    <th style="width: 110px;">IMEI-SN</th>
+                    <th style="width: 220px;">Model - Màu - Dung lượng</th>
+                    <th style="width: 100px;">Trạng thái</th>
+                    <th style="width: 100px;">Chủ sở hữu</th>
+                    <th style="width: 100px;">Case</th>
+                    <th style="width: 200px;">Nội dung (Bấm để xem)</th>
+                    <th style="width: 150px;">Mail Send</th>
+                    <th style="width: 120px;">Info Old</th>
+                    <th style="width: 60px;">Xóa</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // --- PHẦN BẢO MẬT ---
+    function checkLogin() {
+        const user = document.getElementById('adminUser').value;
+        const pass = document.getElementById('adminPass').value;
+        const errMsg = document.getElementById('err-msg');
+
+        if (user === "kanyfrp" && pass === "babymilo") {
+            document.getElementById('lock-screen').style.display = 'none';
+            sessionStorage.setItem('isLoggedIn', 'true');
+        } else {
+            errMsg.innerText = "Sai tài khoản hoặc mật khẩu!";
+        }
+    }
+
+    // Cho phép nhấn Enter để đăng nhập
+    document.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter' && document.getElementById('lock-screen').style.display !== 'none') {
+            checkLogin();
+        }
+    });
+
+    // --- PHẦN QUẢN LÝ BẢNG ---
+    const tableBody = document.getElementById('tableBody');
+    const statusTypeOptions = ["Clean", "Lost"];
+    const soldByOptions = ["TGDD", "FPT", "DIGIWORD", "PETRO", "VIETTEL IMPORT", "VIETTEL EXPORT", "FPT SYSNEX"];
+    const stateOptions = ["Chưa bắt đầu", "Đã hoàn thành", "Đang chạy", "Chạy lại web", "Chạy lại call", "Hủy"];
+
+    const rawModels = [
+        { name: "17 Pro Max", colors: ["Titan Đen", "Titan Bạc", "Titan Tự Nhiên"], storage: ["256GB", "512GB", "1TB"] },
+        { name: "16 Pro Max", colors: ["Black Titanium", "White Titanium", "Natural Titanium", "Desert Titanium"], storage: ["256GB", "512GB", "1TB"] },
+        { name: "16 Pro", colors: ["Black Titanium", "White Titanium", "Natural Titanium", "Desert Titanium"], storage: ["128GB", "256GB", "512GB", "1TB"] },
+        { name: "15 Pro Max", colors: ["Titan Xanh", "Titan Tự Nhiên", "Titan Đen", "Titan Trắng"], storage: ["256GB", "512GB", "1TB"] },
+        { name: "14 Pro Max", colors: ["Tím", "Vàng", "Bạc", "Đen Space"], storage: ["128GB", "256GB", "512GB"] },
+        { name: "13 Pro Max", colors: ["Xanh Sierra", "Vàng", "Bạc", "Xám Graphite"], storage: ["128GB", "256GB", "512GB"] },
+        { name: "12 Pro Max", colors: ["Xanh Đại Dương", "Vàng", "Bạc", "Xám"], storage: ["128GB", "256GB", "512GB"] },
+        { name: "11 Pro Max", colors: ["Xanh Bóng Đêm", "Vàng", "Bạc", "Xám"], storage: ["64GB", "256GB", "512GB"] },
+        { name: "11 thường", colors: ["Đen", "Trắng", "Đỏ", "Vàng", "Xanh", "Tím"], storage: ["64GB", "128GB", "256GB"] }
+    ];
+
+    const iphoneModels = [];
+    rawModels.forEach(m => {
+        iphoneModels.push(`--- IPHONE ${m.name.toUpperCase()} ---`);
+        m.colors.forEach(c => { m.storage.forEach(s => { iphoneModels.push(`iPhone ${m.name} - ${c} - ${s}`); }); });
+    });
+
+    function updateTT() { Array.from(tableBody.rows).forEach((row, index) => { row.cells[0].innerText = index + 1; }); }
+    
+    function searchTable() {
+        let input = document.getElementById("searchInput").value.toUpperCase();
+        let rows = tableBody.getElementsByTagName("tr");
+        for (let i = 0; i < rows.length; i++) {
+            let text = rows[i].textContent || rows[i].innerText;
+            rows[i].style.display = text.toUpperCase().indexOf(input) > -1 ? "" : "none";
+        }
+    }
+
+    function addNewRow(data = Array(11).fill("")) {
+        const row = document.createElement('tr');
+        const ttTd = document.createElement('td'); row.appendChild(ttTd);
+
+        data.forEach((text, index) => {
+            const td = document.createElement('td');
+            if (index === 0) { 
+                const select = createSelect(statusTypeOptions, text, 'statusType'); td.appendChild(select); applyStatusTypeColor(select);
+            } else if (index === 1) { 
+                const select = createSelect(soldByOptions, text, 'soldby'); td.appendChild(select); applySoldByColor(select);
+            } else if (index === 4) { 
+                const select = createSelect(iphoneModels, text, 'model'); td.appendChild(select);
+            } else if (index === 5) { 
+                const select = createSelect(stateOptions, text, 'state'); td.appendChild(select); applyStateColor(select);
+            } else if (index === 8) { 
+                const div = document.createElement('div');
+                div.className = 'content-cell';
+                div.contentEditable = true;
+                div.innerText = text;
+                td.tabIndex = 0;
+                td.appendChild(div);
+            } else {
+                td.contentEditable = true; td.innerText = text;
+            }
+            row.appendChild(td);
+        });
+
+        const delTd = document.createElement('td');
+        delTd.innerHTML = '<button class="btn-del" onclick="removeRow(this)">Xóa</button>';
+        row.appendChild(delTd);
+
+        tableBody.appendChild(row);
+        updateTT();
+    }
+
+    function createSelect(options, selectedValue, type) {
+        const select = document.createElement('select'); select.className = 'select-custom';
+        options.forEach(opt => {
+            const option = document.createElement('option'); option.value = opt; option.text = opt;
+            if(opt === selectedValue) option.selected = true;
+            if(opt.startsWith("---")) { option.disabled = true; }
+            select.appendChild(option);
+        });
+        select.onchange = function() {
+            if(type === 'statusType') applyStatusTypeColor(this);
+            if(type === 'soldby') applySoldByColor(this);
+            if(type === 'state') applyStateColor(this);
+        };
+        return select;
+    }
+
+    function applyStatusTypeColor(select) { select.style.backgroundColor = (select.value === "Clean") ? "#2ecc71" : "#e74c3c"; select.style.color = "white"; }
+    function applySoldByColor(select) { const colors = { "TGDD": "#ffedd5", "FPT": "#fee2e2", "DIGIWORD": "#e0f2fe", "PETRO": "#f0fdf4", "VIETTEL IMPORT": "#ede9fe", "VIETTEL EXPORT": "#fae8ff", "FPT SYSNEX": "#fefce8" }; select.style.backgroundColor = colors[select.value] || "white"; }
+    function applyStateColor(select) { const colors = { "Chưa bắt đầu": "#f3f4f6", "Đã hoàn thành": "#dcfce7", "Đang chạy": "#fef9c3", "Chạy lại web": "#dbeafe", "Chạy lại call": "#f3e8ff", "Hủy": "#fee2e2" }; select.style.backgroundColor = colors[select.value] || "white"; }
+    
+    function removeRow(btn) { if(confirm("Xóa dòng này?")) { btn.parentElement.parentElement.remove(); updateTT(); saveData(); } }
+
+    function saveData() {
+        const rows = [];
+        Array.from(tableBody.rows).forEach(tr => {
+            const rowData = [];
+            for (let i = 1; i < 12; i++) {
+                const select = tr.cells[i].querySelector('select');
+                const divContent = tr.cells[i].querySelector('.content-cell');
+                rowData.push(select ? select.value : (divContent ? divContent.innerText : tr.cells[i].innerText));
+            }
+            rows.push(rowData);
+        });
+        localStorage.setItem('iphoneDataV12', JSON.stringify(rows));
+        document.getElementById('msg').innerText = "✅ Đã lưu!"; setTimeout(() => document.getElementById('msg').innerText = "", 2000);
+    }
+
+    function exportToText() {
+        let content = "";
+        Array.from(tableBody.rows).forEach(row => {
+            if (row.style.display !== "none") {
+                let rowData = [];
+                for (let i = 1; i < 12; i++) {
+                    const select = row.cells[i].querySelector('select');
+                    const divContent = row.cells[i].querySelector('.content-cell');
+                    rowData.push(select ? select.value : (divContent ? divContent.innerText : row.cells[i].innerText));
+                }
+                content += rowData.join(" | ") + "\n\n";
+            }
+        });
+        navigator.clipboard.writeText(content); alert("Đã copy dữ liệu!");
+    }
+
+    window.onload = () => {
+        // Kiểm tra đăng nhập
+        if (sessionStorage.getItem('isLoggedIn') === 'true') {
+            document.getElementById('lock-screen').style.display = 'none';
+        }
+        // Load data
+        const saved = JSON.parse(localStorage.getItem('iphoneDataV12'));
+        if (saved && saved.length > 0) { saved.forEach(r => addNewRow(r)); } 
+        else { addNewRow(["Clean", "TGDD", "", "354419333372591", "iPhone 12 Pro Max - Vàng - 256GB", "Đang chạy", "Anh Quân", "102887340253", "Bấm để nhập nội dung...", "qanybe@gmail.com", ""]); }
+    };
+</script>
+</body>
+</html>
